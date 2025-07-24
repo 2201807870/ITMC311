@@ -1,0 +1,111 @@
+package com.example.mood;
+
+import android.media.MediaPlayer;
+import android.os.Bundle;
+import android.os.Handler;
+import android.view.View;
+import android.widget.Button;
+import android.widget.SeekBar;
+import androidx.appcompat.app.AppCompatActivity;
+
+public class MainActivity extends AppCompatActivity {
+
+    private Button btnPlay, btnPause, btnStop;
+    private MediaPlayer mediaPlayer;
+    private SeekBar seekBar;
+    private Handler handler = new Handler();
+    private Runnable updateSeekBar;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        btnPlay = findViewById(R.id.btnPlay);
+        btnPause = findViewById(R.id.btnPause);
+        btnStop = findViewById(R.id.btnStop);
+        seekBar = findViewById(R.id.seekBar);
+
+        mediaPlayer = MediaPlayer.create(this, R.raw.song);
+
+        // إعداد SeekBar
+        seekBar.setMax(mediaPlayer.getDuration());
+
+        // تحديث SeekBar
+        updateSeekBar = new Runnable() {
+            @Override
+            public void run() {
+                if (mediaPlayer != null) {
+                    seekBar.setProgress(mediaPlayer.getCurrentPosition());
+                    handler.postDelayed(this, 1000); // تحديث كل ثانية
+                }
+            }
+        };
+
+        // تشغيل الموسيقى
+        btnPlay.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (!mediaPlayer.isPlaying()) {
+                    mediaPlayer.start();
+                    handler.post(updateSeekBar);
+                }
+            }
+        });
+
+        // إيقاف الموسيقى مؤقتًا
+        btnPause.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mediaPlayer.isPlaying()) {
+                    mediaPlayer.pause();
+                    handler.removeCallbacks(updateSeekBar);
+                }
+            }
+        });
+
+        // إيقاف الموسيقى وإعادة تعيينها
+        btnStop.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mediaPlayer.isPlaying()) {
+                    mediaPlayer.stop();
+                    mediaPlayer.release();
+                    mediaPlayer = MediaPlayer.create(MainActivity.this, R.raw.song);
+                    seekBar.setProgress(0);
+                    handler.removeCallbacks(updateSeekBar);
+                }
+            }
+        });
+
+        // التعامل مع النقرات على SeekBar لتغيير موقع التشغيل
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                // لا حاجة للتنفيذ هنا
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                // لا حاجة للتنفيذ هنا
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                if (mediaPlayer != null) {
+                    mediaPlayer.seekTo(seekBar.getProgress());
+                }
+            }
+        });
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mediaPlayer != null) {
+            mediaPlayer.release();
+            mediaPlayer = null;
+            handler.removeCallbacks(updateSeekBar);
+        }
+    }
+}
